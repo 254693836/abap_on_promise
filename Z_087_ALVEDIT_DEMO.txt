@@ -1,0 +1,245 @@
+REPORT Z_087_ALVEDIT_DEMO.
+
+"---------------------------------------------------------------------*
+" 編集可能ALV／照会ALVを切り替える学習用デモ
+" S/4HANA の実行可能レポートとして登録して使用します。
+"---------------------------------------------------------------------*
+
+TYPE-POOLS: SLIS.
+
+TYPES: BEGIN OF TY_ALV_DATA,
+         LINE_NO     TYPE I,          " 明細番号（整数）
+         SELECTED    TYPE ABAP_BOOL,  " 明細選択（チェックボックス）
+         DOC_NO      TYPE CHAR10,     " 伝票番号（文字列）
+         DESCRIPTION TYPE CHAR40,     " 摘要（文字列）
+         QUANTITY    TYPE MENGE_D,    " 数量
+         UNIT        TYPE MEINS,      " 数量単位
+         UNIT_PRICE  TYPE P LENGTH 8 DECIMALS 2, " 単価（小数）
+         AMOUNT      TYPE WRBTR,      " 金額
+         CURRENCY    TYPE WAERS,      " 通貨
+         POST_DATE   TYPE DATUM,      " 日付
+         POST_TIME   TYPE TIMS,       " 時刻
+         DISCOUNT    TYPE P LENGTH 5 DECIMALS 2, " 値引率（小数）
+         ACTIVE      TYPE ABAP_BOOL,  " 有効フラグ（チェックボックス）
+         NOTE        TYPE CHAR50,     " 備考（文字列）
+       END OF TY_ALV_DATA.
+
+DATA: GT_ALV_DATA TYPE STANDARD TABLE OF TY_ALV_DATA WITH EMPTY KEY,
+      GT_FIELDCAT TYPE SLIS_T_FIELDCAT_ALV,
+      GS_LAYOUT   TYPE SLIS_LAYOUT_ALV.
+
+"---------------------------------------------------------------------*
+" 選択画面
+" チェックあり：編集可能ALV、チェックなし：照会専用ALV
+"---------------------------------------------------------------------*
+SELECTION-SCREEN BEGIN OF BLOCK B01 WITH FRAME TITLE GV_TITLE.
+  SELECTION-SCREEN BEGIN OF LINE.
+    PARAMETERS P_EDIT AS CHECKBOX DEFAULT 'X' USER-COMMAND MOD.
+    SELECTION-SCREEN COMMENT 5(35) G_EDIT FOR FIELD P_EDIT.
+  SELECTION-SCREEN END OF LINE.
+SELECTION-SCREEN END OF BLOCK B01.
+
+" 編集可能ALVで、変更を許可する列を項目単位で選択します。
+SELECTION-SCREEN BEGIN OF BLOCK B02 WITH FRAME TITLE G_FLD.
+  SELECTION-SCREEN BEGIN OF LINE.
+    PARAMETERS P_SELE AS CHECKBOX DEFAULT 'X' MODIF ID EDT.
+    SELECTION-SCREEN COMMENT 5(12) G_SELE FOR FIELD P_SELE MODIF ID EDT.
+    PARAMETERS P_DOC  AS CHECKBOX DEFAULT 'X' MODIF ID EDT.
+    SELECTION-SCREEN COMMENT 30(12) G_DOC FOR FIELD P_DOC MODIF ID EDT.
+    PARAMETERS P_DESC AS CHECKBOX DEFAULT 'X' MODIF ID EDT.
+    SELECTION-SCREEN COMMENT 55(12) G_DESC FOR FIELD P_DESC MODIF ID EDT.
+  SELECTION-SCREEN END OF LINE.
+  SELECTION-SCREEN BEGIN OF LINE.
+    PARAMETERS P_QTY  AS CHECKBOX DEFAULT 'X' MODIF ID EDT.
+    SELECTION-SCREEN COMMENT 5(12) G_QTY FOR FIELD P_QTY MODIF ID EDT.
+    PARAMETERS P_UNIT AS CHECKBOX DEFAULT 'X' MODIF ID EDT.
+    SELECTION-SCREEN COMMENT 30(12) G_UNIT FOR FIELD P_UNIT MODIF ID EDT.
+    PARAMETERS P_PRIC AS CHECKBOX DEFAULT 'X' MODIF ID EDT.
+    SELECTION-SCREEN COMMENT 55(12) G_PRIC FOR FIELD P_PRIC MODIF ID EDT.
+  SELECTION-SCREEN END OF LINE.
+  SELECTION-SCREEN BEGIN OF LINE.
+    PARAMETERS P_AMT  AS CHECKBOX DEFAULT 'X' MODIF ID EDT.
+    SELECTION-SCREEN COMMENT 5(12) G_AMT FOR FIELD P_AMT MODIF ID EDT.
+    PARAMETERS P_CURR AS CHECKBOX DEFAULT 'X' MODIF ID EDT.
+    SELECTION-SCREEN COMMENT 30(12) G_CURR FOR FIELD P_CURR MODIF ID EDT.
+    PARAMETERS P_DATE AS CHECKBOX DEFAULT 'X' MODIF ID EDT.
+    SELECTION-SCREEN COMMENT 55(12) G_DATE FOR FIELD P_DATE MODIF ID EDT.
+  SELECTION-SCREEN END OF LINE.
+  SELECTION-SCREEN BEGIN OF LINE.
+    PARAMETERS P_TIME AS CHECKBOX DEFAULT 'X' MODIF ID EDT.
+    SELECTION-SCREEN COMMENT 5(12) G_TIME FOR FIELD P_TIME MODIF ID EDT.
+    PARAMETERS P_DISC AS CHECKBOX DEFAULT 'X' MODIF ID EDT.
+    SELECTION-SCREEN COMMENT 30(12) G_DISC FOR FIELD P_DISC MODIF ID EDT.
+    PARAMETERS P_ACTV AS CHECKBOX DEFAULT 'X' MODIF ID EDT.
+    SELECTION-SCREEN COMMENT 55(12) G_ACTV FOR FIELD P_ACTV MODIF ID EDT.
+  SELECTION-SCREEN END OF LINE.
+  SELECTION-SCREEN BEGIN OF LINE.
+    PARAMETERS P_NOTE AS CHECKBOX DEFAULT 'X' MODIF ID EDT.
+    SELECTION-SCREEN COMMENT 5(12) G_NOTE FOR FIELD P_NOTE MODIF ID EDT.
+  SELECTION-SCREEN END OF LINE.
+SELECTION-SCREEN END OF BLOCK B02.
+
+INITIALIZATION.
+  GV_TITLE    = '表示モード'.
+  G_EDIT = '編集可能ALVで表示する'.
+  G_FLD  = '編集を許可する項目（初期値：すべてチェック）'.
+  G_SELE = '選択'.
+  G_DOC  = '伝票番号'.
+  G_DESC = '摘要'.
+  G_QTY  = '数量'.
+  G_UNIT = '単位'.
+  G_PRIC = '単価'.
+  G_AMT  = '金額'.
+  G_CURR = '通貨'.
+  G_DATE = '転記日'.
+  G_TIME = '転記時刻'.
+  G_DISC = '値引率'.
+  G_ACTV = '有効'.
+  G_NOTE = '備考'.
+
+" 編集可能ALVを選ばない場合は、項目別チェックを画面から隠します。
+AT SELECTION-SCREEN OUTPUT.
+  LOOP AT SCREEN.
+    IF SCREEN-GROUP1 = 'EDT'.
+      IF P_EDIT = ABAP_TRUE.
+        SCREEN-ACTIVE = 1.
+        SCREEN-INVISIBLE = 0.
+      ELSE.
+        SCREEN-ACTIVE = 0.
+        SCREEN-INVISIBLE = 1.
+      ENDIF.
+      MODIFY SCREEN.
+    ENDIF.
+  ENDLOOP.
+
+START-OF-SELECTION.
+  " デモ用の仮データを内部テーブルに作成する
+  PERFORM CREATE_DEMO_DATA.
+  " 選択されたモードに合わせて項目カタログを作成する
+  PERFORM BUILD_FIELD_CATALOG.
+  " ALVを表示する
+  PERFORM DISPLAY_ALV.
+
+  "---------------------------------------------------------------------*
+  " デモ用仮データ作成
+  "---------------------------------------------------------------------*
+FORM CREATE_DEMO_DATA.
+  GT_ALV_DATA = VALUE #(
+    ( LINE_NO = 1 SELECTED = ABAP_TRUE  DOC_NO = '9000000001'
+      DESCRIPTION = 'ノートPC購入'       QUANTITY = '2.000' UNIT = 'EA'
+      UNIT_PRICE = '120000.00' AMOUNT = '240000.00' CURRENCY = 'JPY'
+      POST_DATE = '20260925' POST_TIME = '091530' DISCOUNT = '5.00'
+      ACTIVE = ABAP_TRUE  NOTE = '見積確認済み' )
+    ( LINE_NO = 2 SELECTED = ABAP_FALSE DOC_NO = '9000000002'
+      DESCRIPTION = 'ソフトウェア保守'   QUANTITY = '1.000' UNIT = 'MON'
+      UNIT_PRICE = '35000.50' AMOUNT = '35000.50' CURRENCY = 'JPY'
+      POST_DATE = '20260926' POST_TIME = '134500' DISCOUNT = '0.00'
+      ACTIVE = ABAP_TRUE  NOTE = '月額契約' )
+    ( LINE_NO = 3 SELECTED = ABAP_FALSE DOC_NO = '9000000003'
+      DESCRIPTION = '海外輸送費'         QUANTITY = '3.500' UNIT = 'H'
+      UNIT_PRICE = '85.75' AMOUNT = '300.13' CURRENCY = 'USD'
+      POST_DATE = '20260927' POST_TIME = '160000' DISCOUNT = '10.50'
+      ACTIVE = ABAP_FALSE NOTE = '承認待ち' ) ).
+ENDFORM.
+
+"---------------------------------------------------------------------*
+" 項目カタログ作成
+" P_EDIT がオンの場合だけ、変更対象の列に EDIT フラグを設定する
+"---------------------------------------------------------------------*
+FORM BUILD_FIELD_CATALOG.
+  DEFINE ADD_FIELD.
+    APPEND VALUE slis_fieldcat_alv(
+      fieldname     = &1
+      seltext_l     = &2
+      outputlen     = &3
+      edit          = &4
+      checkbox      = &5
+      ref_fieldname = &6
+      ref_tabname   = &7
+      qfieldname    = &8
+      cfieldname    = &9 ) TO gt_fieldcat.
+  END-OF-DEFINITION.
+
+  " 照会モードでは、すべての列を編集不可として項目カタログを作成します。
+  IF P_EDIT = ABAP_FALSE.
+    CLEAR: P_SELE, P_DOC, P_DESC, P_QTY, P_UNIT, P_PRIC, P_AMT,
+           P_CURR, P_DATE, P_TIME, P_DISC, P_ACTV, P_NOTE.
+  ENDIF.
+
+  " 項目別チェックがオンの列だけ、ALVの編集可能属性を設定します。
+  ADD_FIELD 'LINE_NO'     '明細番号'  8  SPACE   SPACE      ''         ''     ''       ''.
+  ADD_FIELD 'SELECTED'    '選択'      5  P_SELE 'X'         ''         ''     ''       ''.
+  ADD_FIELD 'DOC_NO'      '伝票番号'  12 P_DOC  SPACE       ''         ''     ''       ''.
+  ADD_FIELD 'DESCRIPTION' '摘要'      30 P_DESC SPACE       ''         ''     ''       ''.
+  ADD_FIELD 'QUANTITY'    '数量'      15 P_QTY  SPACE       'MENGE'    'MARA' ''       'UNIT'.
+  ADD_FIELD 'UNIT'        '単位'      5  P_UNIT SPACE       'MEINS'    'MARA' ''       ''.
+  ADD_FIELD 'UNIT_PRICE'  '単価'      15 P_PRIC SPACE       ''         ''     ''       ''.
+  ADD_FIELD 'AMOUNT'      '金額'      18 P_AMT  SPACE       'WRBTR'    'BSEG' ''       'CURRENCY'.
+  ADD_FIELD 'CURRENCY'    '通貨'      5  P_CURR SPACE       'WAERS'    'BKPF' ''       ''.
+  ADD_FIELD 'POST_DATE'   '転記日'    10 P_DATE SPACE       'BUDAT'    'BKPF' ''       ''.
+  ADD_FIELD 'POST_TIME'   '転記時刻'  8  P_TIME SPACE       'CPUTM'    'BKPF' ''       ''.
+  ADD_FIELD 'DISCOUNT'    '値引率(%)' 12 P_DISC SPACE       ''         ''     ''       ''.
+  ADD_FIELD 'ACTIVE'      '有効'      5  P_ACTV 'X'         ''         ''     ''       ''.
+  ADD_FIELD 'NOTE'        '備考'      35 P_NOTE SPACE       ''         ''     ''       ''.
+ENDFORM.
+
+"---------------------------------------------------------------------*
+" ALV表示
+" REUSE_ALV_GRID_DISPLAY は実行レポートだけでグリッドALVを表示できる。
+"---------------------------------------------------------------------*
+FORM DISPLAY_ALV.
+  GS_LAYOUT-ZEBRA = ABAP_TRUE.
+  GS_LAYOUT-COLWIDTH_OPTIMIZE = ABAP_TRUE.
+
+  IF P_EDIT = ABAP_TRUE.
+    GS_LAYOUT-WINDOW_TITLEBAR = '編集可能ALV（セルを変更して保存を押してください）'.
+  ELSE.
+    GS_LAYOUT-WINDOW_TITLEBAR = '照会ALV（表示専用）'.
+  ENDIF.
+
+  CALL FUNCTION 'REUSE_ALV_GRID_DISPLAY'
+    EXPORTING
+      I_CALLBACK_PROGRAM      = SY-REPID
+      I_CALLBACK_USER_COMMAND = 'USER_COMMAND'
+      IS_LAYOUT               = GS_LAYOUT
+      IT_FIELDCAT             = GT_FIELDCAT
+      I_SAVE                  = 'A'
+    TABLES
+      T_OUTTAB                = GT_ALV_DATA
+    EXCEPTIONS
+      PROGRAM_ERROR           = 1
+      OTHERS                  = 2.
+
+  IF SY-SUBRC <> 0.
+    MESSAGE 'ALVの表示中にエラーが発生しました。' TYPE 'S' DISPLAY LIKE 'E'.
+  ENDIF.
+ENDFORM.
+
+"---------------------------------------------------------------------*
+" ALVのユーザー操作
+" 編集モードでは、保存ボタン（標準機能コード &DATA_SAVE）で変更結果を反映する。
+"---------------------------------------------------------------------*
+FORM USER_COMMAND USING PV_UCOMM    TYPE SY-UCOMM
+                        PS_SELFIELD TYPE SLIS_SELFIELD.
+  DATA LO_GRID TYPE REF TO CL_GUI_ALV_GRID.
+
+  CASE PV_UCOMM.
+    WHEN '&DATA_SAVE'.
+      IF P_EDIT = ABAP_FALSE.
+        MESSAGE '照会モードでは保存できません。' TYPE 'S' DISPLAY LIKE 'E'.
+        RETURN.
+      ENDIF.
+
+      " 編集中のセル内容を内部テーブルへ確定する
+      CALL FUNCTION 'GET_GLOBALS_FROM_SLVC_FULLSCR'
+        IMPORTING
+          E_GRID = LO_GRID.
+      IF LO_GRID IS BOUND.
+        LO_GRID->CHECK_CHANGED_DATA( ).
+      ENDIF.
+
+      " 学習用デモのため、DB更新は行わず内部テーブルの変更だけを保存する
+      MESSAGE '変更内容を内部テーブルに保存しました（DB更新は行いません）。' TYPE 'S'.
+      PS_SELFIELD-REFRESH = ABAP_TRUE.
+  ENDCASE.
+ENDFORM.
