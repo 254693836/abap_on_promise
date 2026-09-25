@@ -1,0 +1,303 @@
+***************************************最初********************************************
+以下の要件を満たすSAP ABAP Report Programを作成してください。
+
+## 成果物
+
+- 実装言語：ABAP
+- プログラム種別：Executable Report Program
+- ソースコードの保存先：Z_087_BAPI_DEMO.txt
+- 対象SAP環境：S/4HANA
+- コード中のコメント：日本語
+
+## 目的
+
+Selection Screenで指定したBAPI対象を実行して、実行の結果は一覧表示してください。
+
+## 入力画面
+画面で一覧checkboxが表示されます。ディフォルト値はチェックされます
+
+例：■販売管理_受注伝票登録(BAPI_SALESORDER_CREATEFROMDAT2）
+
+内容処理で、
+・画面bapi単位で、formを作ります
+・コメントの説明が日本語でお願いいたします
+・実装する時、チェックだけの対象を実行する
+・bapiの引数は標準のテーブルのデータを取得して参照して設定する、データがないない、仮データを設定して実装する
+・bapiの設定はテストモードで実装する
+・rollbackします
+・最後に実行対象を実行する結果を一覧に出力する
+
+BAPIの一覧：
+
+**********************************************************************
+
+# SAP ABAP BAPI実行デモプログラム 開発要件➡相談する時、チェックboxが危ない➡radiobuttonに修正しました。
+
+## 1. 開発概要
+S/4HANA上で動作するABAP Executable Report Programを作成する。
+Selection Screenに複数のBAPIをチェックボックス形式で表示し、
+ユーザーが選択したBAPIのみを実行する。
+各BAPIはテスト目的で実行し、データベースへの変更は確定せず、
+最終的にROLLBACKする。
+実行後、各BAPIの実行結果を一覧表示する。
+
+
+## 2. 成果物
+実装言語：ABAP
+プログラム種別：Executable Report Program
+ソースコード保存先：Z_087_BAPI_DEMO.txt
+対象環境：SAP S/4HANA
+コメント：日本語
+
+## 3. Selection Screen
+
+Selection Screenに、実行対象となるBAPIを
+チェックボックス形式で表示する。
+すべてのチェックボックスのデフォルト値はONとする。
+
+表示イメージ(例）：
+☑ 販売管理_受注伝票登録（BAPI_SALESORDER_CREATEFROMDAT2)
+☑ 販売管理_受注伝票変更 (BAPI_SALESORDER_CHANGE)
+
+## 4. 対象BAPI
+
+### 4.1 受注伝票登録
+
+BAPI：
+BAPI_SALESORDER_CREATEFROMDAT2
+
+説明：
+販売管理_受注伝票登録
+
+
+### 4.2 受注伝票変更
+
+BAPI：
+BAPI_SALESORDER_CHANGE
+
+説明：
+販売管理_受注伝票変更
+
+
+## 5. プログラム構造
+
+BAPIごとに個別のFORMを作成する。
+
+構造例：
+
+START-OF-SELECTION.
+
+  IF p_create = abap_true.
+    PERFORM execute_salesorder_create.
+  ENDIF.
+
+  IF p_change = abap_true.
+    PERFORM execute_salesorder_change.
+  ENDIF.
+
+  PERFORM display_result.
+
+
+FORM execute_salesorder_create.
+  " BAPI_SALESORDER_CREATEFROMDAT2実行処理
+ENDFORM.
+
+
+FORM execute_salesorder_change.
+  " BAPI_SALESORDER_CHANGE実行処理
+ENDFORM.
+
+
+FORM display_result.
+  " 実行結果一覧表示
+ENDFORM.
+
+
+## 6. BAPI実行処理
+
+各BAPIについて、以下の順番で処理する。
+
+① テスト用データ取得
+↓
+② BAPIパラメータ設定
+↓
+③ BAPI実行
+↓
+④ RETURNメッセージ取得
+↓
+⑤ 実行結果を内部テーブルへ保存
+↓
+⑥ ROLLBACK
+
+
+## 7. BAPIパラメータの設定
+
+BAPIに渡すパラメータについては、
+可能な限りS/4HANA標準テーブルから既存データを取得して使用する。
+
+例えば以下のような情報を既存データから取得する。
+
+・販売組織
+・流通チャネル
+・製品部門
+・得意先
+・品目
+・プラント
+・既存受注伝票
+
+ただし、適切な既存データを取得できない場合は、
+テスト用の仮データを設定する。
+
+仮データを設定している箇所には、
+日本語コメントで明確に説明する。
+
+
+## 8. CREATEとCHANGEの関連
+
+BAPI_SALESORDER_CREATEFROMDAT2によって
+受注伝票番号を取得できた場合は、
+
+可能であれば、その受注伝票番号を
+後続のBAPI_SALESORDER_CHANGEの対象として利用する。
+
+利用できない場合は、
+標準テーブルから変更可能な既存受注伝票を取得して使用する。
+
+
+## 9. テスト実行・更新制御
+
+本プログラムはBAPIの動作確認を目的とするため、
+本番データを確定更新しない。
+
+BAPI実行後にCOMMITは行わない。
+
+必要に応じて
+
+BAPI_TRANSACTION_ROLLBACK
+
+または適切なROLLBACK処理を使用し、
+変更内容をデータベースへ確定しないこと。
+
+
+## 10. RETURNメッセージ
+
+各BAPIのRETURNパラメータを取得する。
+
+少なくとも以下の情報を保持する。
+
+・BAPI名
+・処理内容
+・実行結果
+・メッセージタイプ
+・メッセージID
+・メッセージ番号
+・メッセージ本文
+・対象伝票番号（取得できた場合）
+
+
+## 11. 実行結果一覧
+
+すべての選択済みBAPIの実行完了後、
+結果を一覧表示する。
+
+表示イメージ：
+
+BAPI                               処理内容        結果   MESSAGE
+---------------------------------------------------------------------------
+BAPI_SALESORDER_CREATEFROMDAT2     受注伝票登録    成功   XXXXX
+BAPI_SALESORDER_CHANGE             受注伝票変更    エラー XXXXX
+
+
+RETURNメッセージが複数存在する場合は、
+必要に応じて複数行表示する。
+
+
+## 12. エラー処理
+
+以下の場合でもプログラム全体を異常終了させず、
+エラー内容を結果一覧に記録する。
+
+・標準テーブルからテストデータを取得できない
+・BAPIの必須パラメータを設定できない
+・BAPIからエラーが返された
+・変更対象の受注伝票が存在しない
+
+1つのBAPIでエラーが発生しても、
+他のチェック済みBAPIは可能な限り続けて実行する。
+
+
+## 13. コメント
+
+主要処理には日本語コメントを記述する。
+
+例：
+
+*---------------------------------------------------------------*
+* 受注伝票登録BAPI実行
+*---------------------------------------------------------------*
+
+* テスト用受注データを取得
+
+* BAPIパラメータを設定
+
+* 受注伝票登録BAPIを実行
+
+* RETURNメッセージを保存
+
+* テスト実行のためROLLBACK
+
+
+## 14. 実装上の注意事項
+
+・S/4HANAで使用可能な標準ABAPを使用する
+・BAPIの標準インターフェースに従ってパラメータを設定する
+・本番データを確定更新しない
+・COMMITしない
+・各BAPI実行後のRETURN情報を必ず取得する
+・チェックされていないBAPIは実行しない
+・BAPIごとにFORMを分離する
+・共通処理は必要に応じて共通FORMとして実装する
+・コードの可読性を重視する
+・主要処理には日本語コメントを記述する
+
+## 15. 対象
+BAPI_SALESORDER_CREATEFROMDAT2：販売管理_受注伝票登録
+BAPI_SALESORDER_CHANGE：販売管理_受注伝票変更
+BAPI_OUTB_DELIVERY_CREATE_SLS：販売管理_出荷伝票登録 (受注参照出荷)
+BAPI_BILLINGDOC_CREATEMULTIPLE：販売管理_請求伝票登録
+BAPI_BILLINGDOC_CANCEL1：販売管理_請求伝票取消
+BAPI_PR_CREATE：在庫購買管理_購買依頼登録
+BAPI_PR_CHANGE：在庫購買管理_購買依頼変更
+BAPI_PO_CREATE1：在庫購買管理_発注伝票登録
+BAPI_PO_CHANGE：在庫購買管理_発注伝票変更
+BAPI_GOODSMVT_CREATE：在庫購買管理_在庫移動登録
+BAPI_GOODSMVT_CANCEL：在庫購買管理_在庫移動取消
+BAPI_INCOMINGINVOICE_CREATE：在庫購買管理_請求書照合登録
+BAPI_INCOMINGINVOICE_CANCEL：在庫購買管理_請求書照合取消
+BAPI_MATERIAL_AVAILABILITY：在庫購買管理_利用在庫確認
+BAPI_ACC_DOCUMENT_POST：財務会計_会計伝票登録
+BAPI_ACC_DOCUMENT_REV_POST：財務会計_会計伝票反対仕訳
+BAPI_ACC_PYMNTBLK_UPDATE_POST：財務会計_支払保留解除
+BAPI_ASSET_ACQUISITION_POST：財務会計_固定資産取得
+BAPI_ASSET_RETIREMENT_POST：財務会計_固定資産除却
+BAPI_ASSET_REVERSAL_POST：財務会計_固定資産反対仕訳
+BAPI_MATERIAL_SAVEDATA：マスタ_品目マスタ登録変更
+BAPI_BATCH_SAVE_REPLICA：マスタ_ロットマスタ登録変更
+BAPI_COSTCENTER_CREATEMULTIPLE：マスタ_原価センタマスタ登録
+BAPI_PROFITCENTER_CREATE：マスタ_利益センタマスタ登録
+BAPI_PROJECT_MAINTAIN：マスタ_プロジェクトマスタ登録
+BAPI_BUS2001_SET_STATUS：マスタ_プロジェクトマスタステータス変更
+BAPI_FIXEDASSET_CREATE1：マスタ_資産マスタ登録
+BAPI_FIXEDASSET_OVRTAKE_CREATE：マスタ_旧資産データ登録
+BAPI_EXCHRATE_CREATEMULTIPLE：マスタ_換算レートマスタ登録
+BAPI_EXCHANGERATE_GETDETAIL：マスタ_換算レートマスタ取得
+BAPI_BANK_CREATE：マスタ_銀行マスタ登録
+BAPI_OBJCL_CREATE：マスタ_分類割当登録
+BAPI_USER_CREATE1：ユーザ・権限_ユーザマスタ登録
+BAPI_USER_LOCK：ユーザ・権限_ユーザロック
+BAPI_USER_UNLOCK：ユーザ・権限_ユーザロック解除
+BAPI_USER_ACTGROUPS_ASSIGN：ユーザ・権限_ユーザロール割当
+BAPI_USER_ACTGROUPS_DELETE：ユーザ・権限_ユーザロール削除
+BAPI_CURRENCY_CONV_TO_EXTERNAL：その他_通貨外部書式変換
+BAPI_CURRENCY_CONV_TO_INTERNAL：その他_通貨内部書式変換
+

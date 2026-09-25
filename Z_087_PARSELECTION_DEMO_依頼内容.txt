@@ -1,0 +1,363 @@
+***********************************************************************************
+
+以下の要件を満たすSAP ABAP Report Programを作成してください。
+
+## 成果物
+
+- 実装言語：ABAP
+- プログラム種別：Executable Report Program
+- ソースコードの保存先：Z_087_PARSELECTION_DEMO.txt
+- 対象SAP環境：S/4HANA
+- コード中のコメント：日本語
+
+下記の対象を付けるREPORT PROGRAMを作成してください
+PARAMETERS 
+SELECT-OPTIONS 
+CHECKBOX 
+RADIOBUTTON 
+SELECTION-SCREEN BLOCK
+BLOCK + FRAME
+ULINE
+COMMENT
+SKIP
+BEGIN OF LINE
+
+枠	BEGIN OF BLOCK ... WITH FRAME	グループを枠で囲む
+区切り線	ULINE	横線
+説明	COMMENT	固定テキスト
+空白	SKIP	空行
+横配置	BEGIN OF LINE / END OF LINE	同じ行に複数項目
+位置	POSITION	表示位置指定
+ボタン	PUSHBUTTON	独自ボタン
+ファンクションキー	FUNCTION KEY	Fキー系の独自機能
+独自画面	BEGIN OF SCREEN	Selection Screenを追加
+サブスクリーン	BEGIN OF SCREEN ... AS SUBSCREEN	部分画面
+タブ	TABBED BLOCK	タブ切替
+Modif ID	MODIF ID	項目の動的制御
+ユーザーコマンド	USER-COMMAND	操作イベント発生
+
+**************************************************************
+# SAP ABAP Selection Screen デモプログラム 開発要件
+
+## 1. 開発目的
+
+SAP ABAP Report ProgramのSelection Screenで使用する代表的な
+画面項目、レイアウト、イベント、動的画面制御を確認・学習するための
+デモプログラムを作成してください。
+
+単純に構文を記述するだけではなく、
+各機能について実際に画面上で動作を確認できるようにしてください。
+
+
+## 2. 成果物
+
+・実装言語：ABAP
+・プログラム種別：Executable Report Program
+・ソースコード保存先：Z_087_PARSELECTION_DEMO.txt
+・対象SAP環境：S/4HANA
+・ソースコード内のコメント：日本語
+
+
+## 3. 基本方針
+
+1つのReport Program内で、
+Selection Screenに関する代表的な機能をできるだけ網羅してください。
+
+各機能について、
+「何を確認するための実装なのか」が分かるように
+日本語コメントを記述してください。
+
+また、各機能を単独で記述するだけでなく、
+可能な範囲で関連する機能を組み合わせて、
+実際のReport Programに近い画面構成にしてください。
+
+
+## 4. 実装対象
+
+
+### 4.1 PARAMETERS
+
+通常の単一値入力項目を実装してください。
+
+例：
+・会社コード
+・会計年度
+・受注伝票番号など
+
+PARAMETERSの基本的な使用方法を確認できるようにしてください。
+
+
+### 4.2 SELECT-OPTIONS
+
+複数値・範囲指定が可能な入力項目を実装してください。
+
+例：
+受注伝票番号
+
+以下を確認できるようにしてください。
+
+・単一値
+・From ～ To
+・複数選択
+
+
+### 4.3 CHECKBOX
+
+チェックボックスを実装してください。
+
+一部のチェックボックスにはDEFAULT 'X'を設定し、
+初期状態でチェックされる例も作成してください。
+
+
+### 4.4 RADIOBUTTON
+
+複数のRADIOBUTTONを同じGROUPに設定し、
+1つだけ選択できるようにしてください。
+
+例：
+
+○ 登録
+○ 変更
+○ 照会
+
+
+### 4.5 SELECTION-SCREEN BLOCK / FRAME
+
+BEGIN OF BLOCK ～ END OF BLOCKを使用し、
+関連する入力項目をグループ化してください。
+
+WITH FRAMEおよびTITLEを使用して、
+枠線とタイトルを表示してください。
+
+
+### 4.6 ULINE
+
+Selection Screen上に区切り線を表示してください。
+
+通常のULINEと、
+位置・長さを指定する例を実装してください。
+
+
+### 4.7 COMMENT
+
+画面上に説明文を表示してください。
+
+例：
+
+「以下の条件を入力してください」
+「※これはSelection Screenのデモプログラムです」
+
+
+### 4.8 SKIP
+
+SKIPを使用して空行を作成し、
+入力項目間のレイアウトを調整してください。
+
+
+### 4.9 BEGIN OF LINE / END OF LINE
+
+複数の画面項目を同じ行に配置する例を実装してください。
+
+例：
+
+[チェックボックス]  テストモードで実行
+
+
+### 4.10 POSITION
+
+POSITIONを使用して、
+同じ行に表示する項目の開始位置を調整してください。
+
+
+### 4.11 PUSHBUTTON
+
+Selection Screen上に独自PUSHBUTTONを配置してください。
+
+例：
+
+[入力値クリア]
+[メッセージ表示]
+
+ボタンを押した場合、
+USER-COMMANDを利用して処理を実行してください。
+
+
+### 4.12 FUNCTION KEY
+
+SELECTION-SCREEN FUNCTION KEYを使用して、
+Selection ScreenのApplication Toolbarに
+独自Function Keyを追加してください。
+
+押された場合に、
+どのFunction Keyが実行されたか確認できる処理を実装してください。
+
+
+### 4.13 独自Selection Screen
+
+BEGIN OF SCREEN ～ END OF SCREENを使用して、
+標準Selection Screenとは別の独自Selection Screenを定義してください。
+
+必要に応じてCALL SELECTION-SCREENを使用し、
+独自Selection Screenを表示できるようにしてください。
+
+
+### 4.14 SUBSCREEN
+
+BEGIN OF SCREEN ... AS SUBSCREENを使用して、
+Selection Subscreenの定義例を実装してください。
+
+可能な範囲で、他のSelection Screenから利用できる形にしてください。
+
+
+### 4.15 TABBED BLOCK
+
+TABBED BLOCKを使用して、
+複数タブを持つSelection Screenの例を実装してください。
+
+例：
+
+[基本条件]
+[詳細条件]
+
+タブを切り替えることで、
+表示するSelection Subscreenが変更されるようにしてください。
+
+
+### 4.16 MODIF ID
+
+PARAMETERS等にMODIF IDを設定してください。
+
+AT SELECTION-SCREEN OUTPUT
+および
+LOOP AT SCREEN
+を使用して、
+画面項目を動的に制御してください。
+
+以下の制御例を含めてください。
+
+・入力可能 / 入力不可
+・表示 / 非表示
+・必須 / 任意
+
+
+### 4.17 USER-COMMAND
+
+CHECKBOX、RADIOBUTTON、PUSHBUTTON等で
+USER-COMMANDを使用する例を実装してください。
+
+ユーザー操作によってSelection Screenを再描画し、
+他の項目の状態が変化する例を作成してください。
+
+
+## 5. Selection Screenイベント
+
+以下のイベントについても、
+可能な限り実装例を含めてください。
+
+### INITIALIZATION
+
+Selection Screen表示前の初期値設定。
+
+
+### AT SELECTION-SCREEN OUTPUT
+
+LOOP AT SCREENを使用して、
+画面項目を動的に変更する。
+
+
+### AT SELECTION-SCREEN
+
+画面全体の入力チェックや
+USER-COMMANDの処理を行う。
+
+
+### AT SELECTION-SCREEN ON <項目>
+
+特定項目の入力チェックを行う。
+
+
+### AT SELECTION-SCREEN ON VALUE-REQUEST
+
+独自F4検索ヘルプの例を実装する。
+
+SE11で独自Search Helpを新規作成せず、
+ABAPコード内で実装する。
+
+
+## 6. 動的画面制御
+
+RADIOBUTTONなどの選択状態によって、
+他の入力項目を動的に変更してください。
+
+例：
+
+「登録」を選択した場合
+
+● 登録
+○ 変更
+
+受注番号：入力不可
+
+
+「変更」を選択した場合
+
+○ 登録
+● 変更
+
+受注番号：[入力可能]
+
+
+MODIF IDとLOOP AT SCREENを使用して実現してください。
+
+
+## 7. 実行処理
+
+F8でReport Programを実行した場合、
+Selection Screenで入力された内容を一覧表示してください。
+
+少なくとも以下を表示してください。
+
+・PARAMETERSの値
+・SELECT-OPTIONSの条件
+・CHECKBOXの状態
+・RADIOBUTTONの選択結果
+
+
+## 8. コメント
+
+各機能の直前に、
+何を確認するためのコードなのかを日本語コメントで説明してください。
+
+例：
+
+*---------------------------------------------------------------------*
+* PARAMETERS：単一値入力の例
+*---------------------------------------------------------------------*
+
+*---------------------------------------------------------------------*
+* SELECT-OPTIONS：範囲・複数値指定の例
+*---------------------------------------------------------------------*
+
+*---------------------------------------------------------------------*
+* MODIF ID：画面項目の動的制御
+*---------------------------------------------------------------------*
+
+
+## 9. 実装上の注意事項
+
+・S/4HANAで利用可能な標準ABAP構文を使用すること
+・学習用デモとして理解しやすい構成にすること
+・不要に複雑な業務ロジックを実装しないこと
+・各Selection Screen機能が実際に確認できること
+・可能な限り1つのReport Program内で完結させること
+・SE11などで追加オブジェクトを作成しなくても動作する構成を優先すること
+・主要処理には日本語コメントを記述すること
+・構文上組み合わせに制約がある機能については、
+  無理に同一画面へ配置せず、独立したデモとして実装すること
+
+
+## 10. 成果物
+
+完成したABAPソースコードを以下のファイルに保存してください。
+
+Z_087_PARSELECTION_DEMO.txt

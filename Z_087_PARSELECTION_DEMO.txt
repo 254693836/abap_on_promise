@@ -1,0 +1,327 @@
+REPORT Z_087_PARSELECTION_DEMO.
+
+"---------------------------------------------------------------------*
+" Selection Screen の代表的な機能を確認する学習用デモ
+" S/4HANA の実行可能レポートとして、そのまま登録して使用します。
+"---------------------------------------------------------------------*
+
+TABLES SSCRFIELDS.
+
+TYPES: BEGIN OF TY_COMPANY,
+         BUKRS TYPE BUKRS,
+       END OF TY_COMPANY.
+
+" TITLE、COMMENT、PUSHBUTTON、TAB の名前は、Selection Screen 文で
+" 自動的に生成される画面項目です。そのため DATA 宣言は行いません。
+
+"---------------------------------------------------------------------*
+" FUNCTION KEY：Application Toolbar に独自機能キーを追加します。
+"---------------------------------------------------------------------*
+SELECTION-SCREEN FUNCTION KEY 1.
+
+"---------------------------------------------------------------------*
+" SELECTION-SCREEN BLOCK / FRAME / TITLE / COMMENT / SKIP の例
+"---------------------------------------------------------------------*
+SELECTION-SCREEN BEGIN OF BLOCK B01 WITH FRAME TITLE G_TIT01.
+  " / は改行指定です。枠内の説明文は2桁目から配置します。
+  SELECTION-SCREEN COMMENT /2(70) G_COM01.
+  SELECTION-SCREEN SKIP 1.
+  " PARAMETERS：単一値入力の例。CHG は動的制御用の MODIF ID です。
+  PARAMETERS: P_BUKRS TYPE BUKRS DEFAULT '1000' OBLIGATORY,
+              P_GJAHR TYPE GJAHR,
+              P_VBELN TYPE VBELN_VA MODIF ID CHG.
+  " SELECT-OPTIONS：単一値、範囲、複数値を指定できる受注伝票の例です。
+  SELECT-OPTIONS S_VBELN FOR P_VBELN.
+  " ファイル入力：ローカルPCのパスを直接入力、またはF4で選択します。
+  " LOWER CASE でパスの大文字・小文字を保持します（任意入力）。
+  SELECTION-SCREEN BEGIN OF LINE.
+    SELECTION-SCREEN COMMENT 2(24) G_FILE FOR FIELD P_FILE.
+    SELECTION-SCREEN POSITION 33.
+    PARAMETERS P_FILE TYPE C LENGTH 255 LOWER CASE VISIBLE LENGTH 40.
+  SELECTION-SCREEN END OF LINE.
+SELECTION-SCREEN END OF BLOCK B01.
+
+"---------------------------------------------------------------------*
+" ULINE：通常の区切り線と、位置・長さを指定する区切り線の例
+"---------------------------------------------------------------------*
+SELECTION-SCREEN ULINE.
+" 直前の全幅の線と重ならないよう、/ で別の行に配置します。
+SELECTION-SCREEN ULINE /10(55).
+
+"---------------------------------------------------------------------*
+" BEGIN OF LINE / POSITION：同一行の複数項目と開始位置調整の例
+"---------------------------------------------------------------------*
+SELECTION-SCREEN BEGIN OF BLOCK B02 WITH FRAME TITLE G_TIT02.
+  " CHECKBOX：DEFAULT 'X' と USER-COMMAND の例です。
+  SELECTION-SCREEN BEGIN OF LINE.
+    SELECTION-SCREEN POSITION 2.
+    PARAMETERS P_TEST AS CHECKBOX DEFAULT 'X' USER-COMMAND MODE.
+    SELECTION-SCREEN COMMENT 6(25) G_TEST FOR FIELD P_TEST.
+    SELECTION-SCREEN POSITION 42.
+    PARAMETERS P_DETAIL AS CHECKBOX USER-COMMAND MODE.
+    SELECTION-SCREEN COMMENT 47(25) G_DETAIL FOR FIELD P_DETAIL.
+  SELECTION-SCREEN END OF LINE.
+  SELECTION-SCREEN SKIP 1.
+  SELECTION-SCREEN BEGIN OF LINE.
+    SELECTION-SCREEN COMMENT 2(12) G_ACTION.
+    " RADIOBUTTON：同一 GROUP から一つだけ選択します。
+    SELECTION-SCREEN POSITION 22.
+    PARAMETERS P_CREATE RADIOBUTTON GROUP ACT DEFAULT 'X' USER-COMMAND MODE.
+    SELECTION-SCREEN COMMENT 25(8) G_CREATE FOR FIELD P_CREATE.
+    SELECTION-SCREEN POSITION 40.
+    PARAMETERS P_CHANGE RADIOBUTTON GROUP ACT.
+    SELECTION-SCREEN COMMENT 43(8) G_CHANGE FOR FIELD P_CHANGE.
+    SELECTION-SCREEN POSITION 58.
+    PARAMETERS P_DISP RADIOBUTTON GROUP ACT.
+    SELECTION-SCREEN COMMENT 61(8) G_DISP FOR FIELD P_DISP.
+  SELECTION-SCREEN END OF LINE.
+  " END OF LINE の後も / を明示し、ラジオボタン行との重なりを防ぎます。
+  SELECTION-SCREEN COMMENT /2(70) G_COM02.
+SELECTION-SCREEN END OF BLOCK B02.
+
+"---------------------------------------------------------------------*
+" PUSHBUTTON：USER-COMMAND でクリア、メッセージ、独自画面表示を行います。
+"---------------------------------------------------------------------*
+SELECTION-SCREEN BEGIN OF BLOCK B03 WITH FRAME TITLE G_TIT03.
+  SELECTION-SCREEN BEGIN OF LINE.
+    SELECTION-SCREEN PUSHBUTTON 2(18) G_BUT01 USER-COMMAND CLR.
+    SELECTION-SCREEN POSITION 24.
+    SELECTION-SCREEN PUSHBUTTON 24(18) G_BUT02 USER-COMMAND MSG.
+    SELECTION-SCREEN POSITION 46.
+    SELECTION-SCREEN PUSHBUTTON 46(20) G_BUT03 USER-COMMAND SCR2.
+  SELECTION-SCREEN END OF LINE.
+SELECTION-SCREEN END OF BLOCK B03.
+
+"---------------------------------------------------------------------*
+" SUBSCREEN：タブで利用する基本条件用の Selection Subscreen です。
+"---------------------------------------------------------------------*
+SELECTION-SCREEN BEGIN OF SCREEN 110 AS SUBSCREEN.
+  " 同じ文言でも、別ブロックの TITLE には固有の項目名を使用します。
+  SELECTION-SCREEN BEGIN OF BLOCK SB1 WITH FRAME TITLE G_TIT05.
+    PARAMETERS: P_PLANT TYPE WERKS_D DEFAULT '1000',
+                P_SALES TYPE VKORG.
+  SELECTION-SCREEN END OF BLOCK SB1.
+SELECTION-SCREEN END OF SCREEN 110.
+
+"---------------------------------------------------------------------*
+" SUBSCREEN：詳細条件用。MODIF ID DET を動的な表示対象に使用します。
+"---------------------------------------------------------------------*
+SELECTION-SCREEN BEGIN OF SCREEN 120 AS SUBSCREEN.
+  SELECTION-SCREEN BEGIN OF BLOCK SB2 WITH FRAME TITLE G_TIT04.
+    PARAMETERS: P_KUNNR  TYPE KUNNR MODIF ID DET,
+                P_AMOUNT TYPE WRBTR MODIF ID DET.
+  SELECTION-SCREEN END OF BLOCK SB2.
+SELECTION-SCREEN END OF SCREEN 120.
+
+"---------------------------------------------------------------------*
+" 独自 Selection Screen：TABBED BLOCK と Subscreen を組み合わせた画面です。
+" 標準画面の「タブ画面を表示」ボタンから CALL SELECTION-SCREEN します。
+"---------------------------------------------------------------------*
+SELECTION-SCREEN BEGIN OF SCREEN 200.
+  SELECTION-SCREEN BEGIN OF TABBED BLOCK TB FOR 10 LINES.
+    SELECTION-SCREEN TAB (20) G_TAB01 USER-COMMAND TAB1 DEFAULT SCREEN 110.
+    SELECTION-SCREEN TAB (20) G_TAB02 USER-COMMAND TAB2 DEFAULT SCREEN 120.
+  SELECTION-SCREEN END OF BLOCK TB.
+SELECTION-SCREEN END OF SCREEN 200.
+
+"---------------------------------------------------------------------*
+" INITIALIZATION：Selection Screen 初期表示前に初期値と機能キー文言を設定します。
+"---------------------------------------------------------------------*
+
+INITIALIZATION.
+  " 自動生成された画面テキスト項目に文言を設定します。
+  G_TIT01 = '基本入力条件'.
+  G_TIT02 = '実行オプション'.
+  G_TIT03 = 'レイアウト／操作デモ'.
+  G_TIT04 = '詳細条件（タブ内）'.
+  G_TIT05 = '基本入力条件'.
+  G_COM01 = '以下の条件を入力してください（Selection Screen のデモ）'.
+  G_COM02 = '※画面操作により入力可否・表示・必須状態が変わります。'.
+  G_FILE = 'ファイル（F4で選択）'.
+  " COMMENT に文字列を直接指定せず、8文字以内の項目名を使用します。
+  G_TEST = 'テストモードで実行'.
+  G_DETAIL = '詳細条件を表示'.
+  G_ACTION = '処理区分：'.
+  G_CREATE = '登録'.
+  G_CHANGE = '変更'.
+  G_DISP = '照会'.
+  G_BUT01 = '入力値クリア'.
+  G_BUT02 = 'メッセージ表示'.
+  G_BUT03 = 'タブ画面を表示'.
+  G_TAB01 = '基本条件'.
+  G_TAB02 = '詳細条件'.
+  SSCRFIELDS-FUNCTXT_01 = 'ヘルプ表示'.
+  TB-ACTIVETAB = 'TAB1'.
+  P_GJAHR = SY-DATUM(4).
+
+  "---------------------------------------------------------------------*
+  " AT SELECTION-SCREEN OUTPUT：MODIF ID と LOOP AT SCREEN による動的制御です。
+  " 登録時は受注番号を入力不可、変更時は必須、照会時は表示専用にします。
+  " 詳細表示チェックの有無で詳細項目を表示／非表示にします。
+  "---------------------------------------------------------------------*
+
+AT SELECTION-SCREEN OUTPUT.
+  LOOP AT SCREEN.
+    CASE SCREEN-GROUP1.
+      WHEN 'CHG'.
+        IF P_CREATE = ABAP_TRUE.
+          SCREEN-INPUT = 0.
+          SCREEN-REQUIRED = 0.
+        ELSEIF P_CHANGE = ABAP_TRUE.
+          SCREEN-INPUT = 1.
+          SCREEN-REQUIRED = 1.
+        ELSE.
+          SCREEN-INPUT = 0.
+          SCREEN-REQUIRED = 0.
+        ENDIF.
+        MODIFY SCREEN.
+      WHEN 'DET'.
+        IF P_DETAIL = ABAP_TRUE.
+          SCREEN-ACTIVE = 1.
+          SCREEN-INVISIBLE = 0.
+          SCREEN-INPUT = 1.
+        ELSE.
+          SCREEN-ACTIVE = 0.
+          SCREEN-INVISIBLE = 1.
+        ENDIF.
+        MODIFY SCREEN.
+    ENDCASE.
+  ENDLOOP.
+
+  "---------------------------------------------------------------------*
+  " AT SELECTION-SCREEN ON：特定項目（会社コード）の入力チェック例です。
+  "---------------------------------------------------------------------*
+
+AT SELECTION-SCREEN ON P_BUKRS.
+  IF P_BUKRS IS INITIAL.
+    MESSAGE '会社コードを入力してください。' TYPE 'E'.
+  ENDIF.
+
+  "---------------------------------------------------------------------*
+  " AT SELECTION-SCREEN ON VALUE-REQUEST：ABAPコードだけで実装する F4 の例です。
+  " SE11 の独自 Search Help を作成せず、候補会社コードを表示します。
+  "---------------------------------------------------------------------*
+
+AT SELECTION-SCREEN ON VALUE-REQUEST FOR P_BUKRS.
+  DATA LT_COMPANY TYPE STANDARD TABLE OF TY_COMPANY WITH EMPTY KEY.
+  LT_COMPANY = VALUE #( ( BUKRS = '1000' ) ( BUKRS = '1100' )
+                        ( BUKRS = '2000' ) ( BUKRS = '3000' ) ).
+  CALL FUNCTION 'F4IF_INT_TABLE_VALUE_REQUEST'
+    EXPORTING
+      RETFIELD    = 'BUKRS'
+      DYNPPROG    = SY-REPID
+      DYNPNR      = SY-DYNNR
+      DYNPROFIELD = 'P_BUKRS'
+      VALUE_ORG   = 'S'
+    TABLES
+      VALUE_TAB   = LT_COMPANY.
+
+  "---------------------------------------------------------------------*
+  " ファイルのF4：SAP GUIのファイル選択ダイアログを表示します。
+  " パスのみを取得し、ファイルの読み込み・アップロードは行いません。
+  " キャンセル時は現在の入力値を保持します。
+  "---------------------------------------------------------------------*
+
+AT SELECTION-SCREEN ON VALUE-REQUEST FOR P_FILE.
+  DATA: LT_FILES  TYPE FILETABLE,
+        LS_FILE   TYPE LINE OF FILETABLE,
+        LV_RC     TYPE I,
+        LV_ACTION TYPE I.
+
+  CALL METHOD CL_GUI_FRONTEND_SERVICES=>FILE_OPEN_DIALOG
+    EXPORTING
+      WINDOW_TITLE            = '入力ファイルを選択してください'
+      MULTISELECTION          = ABAP_FALSE
+    CHANGING
+      FILE_TABLE              = LT_FILES
+      RC                      = LV_RC
+      USER_ACTION             = LV_ACTION
+    EXCEPTIONS
+      FILE_OPEN_DIALOG_FAILED = 1
+      CNTL_ERROR              = 2
+      ERROR_NO_GUI            = 3
+      NOT_SUPPORTED_BY_GUI    = 4
+      OTHERS                  = 5.
+
+  IF SY-SUBRC <> 0.
+    MESSAGE 'ファイル選択を利用できません。パスを直接入力してください。'
+      TYPE 'S' DISPLAY LIKE 'E'.
+  ELSEIF LV_ACTION = CL_GUI_FRONTEND_SERVICES=>ACTION_OK AND LV_RC > 0.
+    READ TABLE LT_FILES INTO LS_FILE INDEX 1.
+    IF SY-SUBRC = 0.
+      " 長いパスを黙って切り捨てないよう、代入前に確認します。
+      IF STRLEN( LS_FILE-FILENAME ) > 255.
+        MESSAGE 'ファイルパスは255文字以内で指定してください。'
+          TYPE 'S' DISPLAY LIKE 'E'.
+      ELSE.
+        P_FILE = LS_FILE-FILENAME.
+      ENDIF.
+    ENDIF.
+  ENDIF.
+
+  "---------------------------------------------------------------------*
+  " AT SELECTION-SCREEN：全体チェック、USER-COMMAND、タブ切替を処理します。
+  "---------------------------------------------------------------------*
+
+AT SELECTION-SCREEN.
+  CASE SSCRFIELDS-UCOMM.
+    WHEN 'CLR'.
+      CLEAR: P_BUKRS, P_GJAHR, P_VBELN, P_TEST, P_DETAIL,
+             P_CREATE, P_CHANGE, P_DISP, P_PLANT, P_SALES,
+             P_KUNNR, P_AMOUNT, P_FILE.
+      CLEAR S_VBELN[].
+      P_CREATE = ABAP_TRUE.
+      MESSAGE '入力値をクリアしました。' TYPE 'S'.
+    WHEN 'MSG'.
+      MESSAGE 'メッセージ表示ボタンが押されました。' TYPE 'S'.
+    WHEN 'SCR2'.
+      CALL SELECTION-SCREEN 200.
+    WHEN 'FC01'.
+      MESSAGE 'Application Toolbar の独自 Function Key が実行されました。' TYPE 'S'.
+    WHEN 'TAB1'.
+      TB-ACTIVETAB = 'TAB1'.
+    WHEN 'TAB2'.
+      TB-ACTIVETAB = 'TAB2'.
+  ENDCASE.
+
+  IF P_CHANGE = ABAP_TRUE AND P_VBELN IS INITIAL
+     AND SSCRFIELDS-UCOMM IS INITIAL.
+    MESSAGE '変更を選択した場合は受注伝票番号を入力してください。' TYPE 'E'.
+  ENDIF.
+
+  "---------------------------------------------------------------------*
+  " START-OF-SELECTION：F8 実行時に入力内容を簡易一覧として出力します。
+  "---------------------------------------------------------------------*
+
+START-OF-SELECTION.
+  WRITE: / '=== Selection Screen 入力内容 ===',
+         / '会社コード：', P_BUKRS,
+         / '会計年度  ：', P_GJAHR,
+         / '受注伝票番号（PARAMETERS）：', P_VBELN,
+         / 'テストモード：', P_TEST,
+         / '詳細条件表示：', P_DETAIL,
+         / 'ファイルパス：', P_FILE.
+
+  WRITE: / '処理区分：'.
+  IF P_CREATE = ABAP_TRUE.
+    WRITE '登録'.
+  ELSEIF P_CHANGE = ABAP_TRUE.
+    WRITE '変更'.
+  ELSE.
+    WRITE '照会'.
+  ENDIF.
+
+  WRITE: / '受注伝票条件（SELECT-OPTIONS）：'.
+  IF S_VBELN[] IS INITIAL.
+    WRITE '指定なし'.
+  ELSE.
+    LOOP AT S_VBELN INTO DATA(LS_VBELN).
+      WRITE: / '  SIGN=', LS_VBELN-SIGN,
+               ' OPTION=', LS_VBELN-OPTION,
+               ' LOW=', LS_VBELN-LOW,
+               ' HIGH=', LS_VBELN-HIGH.
+    ENDLOOP.
+  ENDIF.
+
+  WRITE: / 'タブ基本条件：プラント=', P_PLANT, ' 販売組織=', P_SALES,
+         / 'タブ詳細条件：得意先=', P_KUNNR, ' 金額=', P_AMOUNT.
